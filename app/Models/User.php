@@ -6,6 +6,8 @@ use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use Laravel\Jetstream\HasProfilePhoto;
 use Laravel\Sanctum\HasApiTokens;
@@ -17,6 +19,35 @@ class User extends Authenticatable
     use HasProfilePhoto;
     use Notifiable;
     use TwoFactorAuthenticatable;
+
+
+    public function hasPermission($permission_name){
+        $permission_id = DB::table('permissions')
+            ->where([['name', $permission_name]])
+            ->first();
+        $permission_id = $permission_id->id;
+        $result = DB::table('permissions_users')
+            ->where([
+                ['user_id', Auth::id()],
+                ['permission_id', $permission_id]
+            ])
+            ->first();
+
+        if ($result == null){
+            return false;
+        } else{
+            return true;
+        }
+
+    }
+
+    public function leads(){
+        return $this->hasMany(Lead::class,'assigned_to');
+    }
+
+    public function permissions(){
+        return $this->belongsToMany(Permission::class, 'permissions_users');
+    }
 
     /**
      * The attributes that are mass assignable.
